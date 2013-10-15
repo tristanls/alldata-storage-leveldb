@@ -1,0 +1,29 @@
+{
+  "name": "alldata-storage-leveldb",
+  "version": "0.1.0",
+  "description": "AllData LevelDB-backed storage",
+  "scripts": {
+    "test": "node scripts/test.js"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "dateformat": "1.0.6-1.2.3",
+    "leveldown": "0.9.1",
+    "levelup": "0.17.0"
+  },
+  "devDependencies": {
+    "nodeunit": "0.8.1",
+    "shelljs": "0.2.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:tristanls/alldata-storage-leveldb.git"
+  },
+  "keywords": [
+    "alldata",
+    "storage",
+    "leveldb"
+  ],
+  "author": "Tristan Slominski <tristan.slominski@gmail.com>",
+  "license": "MIT"
+}
