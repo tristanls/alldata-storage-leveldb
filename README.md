@@ -132,7 +132,7 @@ Upon creation of a new AllDataStorage instance this method is scheduled to run a
   * `key`: _String_ AllData formatted key, example: `20130927T005240652508858176`.
   * `value`: _Object_ Event to put.
   * `options`: _Object_ _(Default: undefined)_ Optional options for this specific put operation.
-    * `keyEncoding`: _String_ _(Default: undefined)_ _**CAUTION: not recommended** Alternative encoding for the key. One of: `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`.
+    * `keyEncoding`: _String_ _(Default: undefined)_ _**CAUTION: not recommended**_ Alternative encoding for the key. One of: `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`.
     * `sync`: _Boolean_ _(Default: false)_ Will force the Operating System to synchronize to disk prior to calling the `callback` with success.
     * `valueEncoding`: _String_ _(Default: undefined)_ _**CAUTION: not recommended**_ Alternative encoding for the value. One of: `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`.
   * `callback`: _Function_ `function (error) {}` Callback to call with error or success.
