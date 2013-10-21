@@ -30,7 +30,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 "use strict";
 
-var dateformat = require('dateformat'),
+var Ack = require('ack'),
+    dateformat = require('dateformat'),
     events = require('events'),
     levelup = require('levelup'),
     path = require('path'),
@@ -70,18 +71,20 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
 
     var now = new Date();
 
-    self.currentIntervalStart = "" + dateformat(now, "UTC:yyyy")
+    self.currentInterval = {};
+
+    self.currentInterval.start = "" + dateformat(now, "UTC:yyyy")
         + dateformat(now, "UTC:mm") + dateformat(now, "UTC:dd");
 
     // for easy calculations using new Date(self.currentIntervalStartDateFormat)
-    self.currentIntervalStartDateFormat = "" + dateformat(now, "UTC:yyyy") + "-" 
-        + dateformat(now, "UTC:mm") + "-" + dateformat(now, "UTC:dd");
+    self.currentInterval.startDateFormat = "" + dateformat(now, "UTC:yyyy") 
+        + "-" + dateformat(now, "UTC:mm") + "-" + dateformat(now, "UTC:dd");
 
     // don't want to implement a full blown ISO8601 duration parser right now
     switch (self.consolidationInterval) {
         case "P1D":
-            self.currentIntervalStart += "T000000";
-            self.currentIntervalStartDateFormat += "T00:00:00";
+            self.currentInterval.start += "T000000";
+            self.currentInterval.startDateFormat += "T00:00:00";
             self.consolidationIntervalMilliseconds = 1000 * 60 * 60 * 24; // 1 day
             break;
         case "PT3H":
@@ -90,13 +93,13 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
             hours = "" + hours;
             if (hours.length == 1) 
                 hours = "0" + hours;
-            self.currentIntervalStart += "T" + hours + "0000";
-            self.currentIntervalStartDateFormat += "T" + hours + ":00:00";
+            self.currentInterval.start += "T" + hours + "0000";
+            self.currentInterval.startDateFormat += "T" + hours + ":00:00";
             self.consolidationIntervalMilliseconds = 1000 * 60 * 60 * 3; // 3 hours
             break;
         case "PT1H":
-            self.currentIntervalStart += "T" + dateformat(now, "UTC:HH") + "0000";
-            self.currentIntervalStartDateFormat += 
+            self.currentInterval.start += "T" + dateformat(now, "UTC:HH") + "0000";
+            self.currentInterval.startDateFormat += 
                 "T" + dateformat(now, "UTC:HH") + ":00:00";
             self.consolidationIntervalMilliseconds = 1000 * 60 * 60; // 1 hour
             break;
@@ -109,8 +112,8 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
             minutes = "" + minutes;
             if (minutes.length == 1)
                 minutes = "0" + minutes;
-            self.currentIntervalStart += "T" + hours + minutes + "00";
-            self.currentIntervalStartDateFormat += "T" + hours + ":" + minutes + ":00";
+            self.currentInterval.start += "T" + hours + minutes + "00";
+            self.currentInterval.startDateFormat += "T" + hours + ":" + minutes + ":00";
             self.consolidationIntervalMilliseconds = 1000 * 60 * 15; // 15 minutes
             break;
         case "PT5M":
@@ -122,18 +125,20 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
             minutes = "" + minutes;
             if (minutes.length == 1)
                 minutes = "0" + minutes;
-            self.currentIntervalStart += "T" + hours + minutes + "00";
-            self.currentIntervalStartDateFormat += "T" + hours + ":" + minutes + ":00";
+            self.currentInterval.start += "T" + hours + minutes + "00";
+            self.currentInterval.startDateFormat += "T" + hours + ":" + minutes + ":00";
             self.consolidationIntervalMilliseconds = 1000 * 60 * 5; // 5 minutes
             break;
         default:
             throw new Error("Invalid consolidationInterval: " + self.consolidationInterval);
     }
 
+    self.nextInterval = {};
+
     var nextIntervalStartDate = new Date(
-        (new Date(self.currentIntervalStartDateFormat)).getTime()
+        (new Date(self.currentInterval.startDateFormat)).getTime()
         + self.consolidationIntervalMilliseconds);
-    self.nextIntervalStart = "" + dateformat(nextIntervalStartDate, "UTC:yyyy")
+    self.nextInterval.start = "" + dateformat(nextIntervalStartDate, "UTC:yyyy")
         + dateformat(nextIntervalStartDate, "UTC:mm")
         + dateformat(nextIntervalStartDate, "UTC:dd")
         + "T" + dateformat(nextIntervalStartDate, "UTC:HH")
@@ -142,31 +147,36 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
 
     var nextIntervalEndDate = new Date(nextIntervalStartDate.getTime()
         + self.consolidationIntervalMilliseconds);
-    self.nextIntervalEnd = "" + dateformat(nextIntervalEndDate, "UTC:yyyy")
+    self.nextInterval.end = "" + dateformat(nextIntervalEndDate, "UTC:yyyy")
         + dateformat(nextIntervalEndDate, "UTC:mm")
         + dateformat(nextIntervalEndDate, "UTC:dd")
         + "T" + dateformat(nextIntervalEndDate, "UTC:HH")
         + dateformat(nextIntervalEndDate, "UTC:MM")
         + "00";
-    self.nextIntervalEndDateFormat = "" 
+    self.nextInterval.endDateFormat = "" 
         + dateformat(nextIntervalEndDate, "UTC:yyyy") + "-"
         + dateformat(nextIntervalEndDate, "UTC:mm") + "-"
         + dateformat(nextIntervalEndDate, "UTC:dd") + "T"
         + dateformat(nextIntervalEndDate, "UTC:HH") + ":"
         + dateformat(nextIntervalEndDate, "UTC:MM") + ":00";         
 
+    self.previousInterval = {};
+
     var previousIntervalStartDate = new Date(
-        (new Date(self.currentIntervalStartDateFormat)).getTime()
+        (new Date(self.currentInterval.startDateFormat)).getTime()
         - self.consolidationIntervalMilliseconds);
-    self.previousIntervalStart = "" + dateformat(previousIntervalStartDate, "UTC:yyyy")
+    self.previousInterval.start = "" + dateformat(previousIntervalStartDate, "UTC:yyyy")
         + dateformat(previousIntervalStartDate, "UTC:mm")
         + dateformat(previousIntervalStartDate, "UTC:dd")
         + "T" + dateformat(previousIntervalStartDate, "UTC:HH")
         + dateformat(previousIntervalStartDate, "UTC:MM")
         + "00";
 
-    self.currentInterval = 
-        levelup(path.join(self.location, self.currentIntervalStart), {
+    // create new ack instance for tracking XORs
+    self.ack = new Ack();
+
+    self.currentInterval.interval = 
+        levelup(path.join(self.location, self.currentInterval.start), {
             cacheSize: self.cacheSize,
             compression: self.compression,
             createIfMissing: true,
@@ -174,9 +184,36 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
             keyEncoding: self.keyEncoding,
             valueEncoding: self.valueEncoding
         });
+    // need to abstract currentIntervalState so that across interval boundaries
+    // all of it gets copied accordingly
 
-    self.previousInterval = 
-        levelup(path.join(self.location, self.previousIntervalStart), {
+    self.currentInterval.xor = new Buffer(20); // 160 bit buffer
+    self.currentInterval.xor.fill(0);
+    self.currentInterval.xorDirty = false;
+    self.currentInterval.xorVerified = true;
+
+    // // load existing interval from the database and update self.currentIntervalXor
+    // self.currentInterval.interval.get('_xor', function (error, value) {
+    //     if (error) {
+    //         if (error.notFound) {
+    //             // we already assumed all zeros to start with, so we now verified
+    //             // that this is indeed the case
+    //             self.currentIntervalXorVerified = true;
+    //             return;
+    //         }
+
+    //         self.emit('error', error); // some other error occured
+    //         return;
+    //     }
+
+    //     // we got the previous xor value
+    //     // to update what we have in memory, xor it with what we got
+    //     // make sure that 
+    //     self.ack.stamp(self.currentIntervalStart)
+    // });
+
+    self.previousInterval.interval = 
+        levelup(path.join(self.location, self.previousInterval.start), {
             cacheSize: self.cacheSize,
             compression: self.compression,
             createIfMissing: true,
@@ -200,33 +237,33 @@ AllDataStorage.prototype.close = function close (callback) {
 
     var callbackCount = 0;
 
-    if (self.previousInterval)
+    if (self.previousInterval.interval)
         callbackCount++;
 
-    if (self.currentInterval)
+    if (self.currentInterval.interval)
         callbackCount++;
 
-    if (self.nextInterval)
+    if (self.nextInterval.interval)
         callbackCount++;
 
-    if (self.previousInterval) {
-        self.previousInterval.close(function (error) {
+    if (self.previousInterval.interval) {
+        self.previousInterval.interval.close(function (error) {
             callbackCount--;
             if (callbackCount == 0 && callback) 
                 return callback(error);
         });
     }
 
-    if (self.currentInterval) {
-        self.currentInterval.close(function (error) {
+    if (self.currentInterval.interval) {
+        self.currentInterval.interval.close(function (error) {
             callbackCount--;
             if (callbackCount == 0 && callback)
                 return callback(error);
         });
     }
 
-    if (self.nextInterval) {
-        self.nextInterval.close(function (error) {
+    if (self.nextInterval.interval) {
+        self.nextInterval.interval.close(function (error) {
             callbackCount--;
             if (callbackCount == 0 && callback)
                 return callback(error);
@@ -249,23 +286,21 @@ AllDataStorage.prototype.intervalCheck = function intervalCheck (now) {
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH")
         + dateformat(now, "UTC:MM") + "00";
 
-    if (nowString > self.nextIntervalStart) {
+    if (nowString > self.nextInterval.start) {
         var closedIntervalPath = 
-            path.join(self.location, self.previousIntervalStart);
+            path.join(self.location, self.previousInterval.start);
 
-        self.previousInterval.close(function (error) {
+        self.previousInterval.interval.close(function (error) {
             // TODO: what to do in case of error here?
             self.emit('interval closed', closedIntervalPath);                   
         });
 
         self.previousInterval = self.currentInterval;
-        self.previousIntervalStart = self.currentIntervalStart;
+        self.currentInterval = self.nextInterval;
 
-        if (self.nextInterval) {
-            self.currentInterval = self.nextInterval;
-        } else {
-            self.currentInterval = levelup(
-                path.join(self.location, self.nextIntervalStart), {
+        if (!self.currentInterval.interval) {
+            self.currentInterval.interval = levelup(
+                path.join(self.location, self.currentInterval.start), {
                     cacheSize: self.cacheSize,
                     compression: self.compression,
                     createIfMissing: true,
@@ -274,21 +309,19 @@ AllDataStorage.prototype.intervalCheck = function intervalCheck (now) {
                     valueEncoding: self.valueEncoding
                 });
         }
-        self.nextInterval = undefined;
 
-        self.currentIntervalStart = self.nextIntervalStart;
-        self.nextIntervalStart = self.nextIntervalEnd;
+        self.nextInterval = { start: self.currentInterval.end };
 
         var nextIntervalEndDate = new Date(
-            (new Date(self.nextIntervalEndDateFormat)).getTime()
+            (new Date(self.currentInterval.endDateFormat)).getTime()
             + self.consolidationIntervalMilliseconds);
-        self.nextIntervalEnd = "" + dateformat(nextIntervalEndDate, "UTC:yyyy")
+        self.nextInterval.end = "" + dateformat(nextIntervalEndDate, "UTC:yyyy")
             + dateformat(nextIntervalEndDate, "UTC:mm")
             + dateformat(nextIntervalEndDate, "UTC:dd")
             + "T" + dateformat(nextIntervalEndDate, "UTC:HH")
             + dateformat(nextIntervalEndDate, "UTC:MM")
             + "00";
-        self.nextIntervalEndDateFormat = "" 
+        self.nextInterval.endDateFormat = "" 
             + dateformat(nextIntervalEndDate, "UTC:yyyy") + "-"
             + dateformat(nextIntervalEndDate, "UTC:mm") + "-"
             + dateformat(nextIntervalEndDate, "UTC:dd") + "T"
@@ -323,22 +356,22 @@ AllDataStorage.prototype.put = function put (key, value, options, callback) {
     }
 
     // check that we are writing within the allowable interval range
-    if (key < self.previousIntervalStart) {
+    if (key < self.previousInterval.start) {
         return callback(new Error("key " + key + " too old, last acceptable: " + 
             self.previousMarker));
-    } else if (key > self.nextIntervalEnd) {
+    } else if (key > self.nextInterval.end) {
         return callback(new Error("key " + key + " too far into the future, " +
-            "furthest acceptable: " + self.newIntervalEnd));
+            "furthest acceptable: " + self.nextInterval.end));
     }
 
     var interval;
 
     // if we are writing into a future interval, assume we are close to interval
     // switch and create new interval if necessary and put data in it
-    if (key > self.nextIntervalStart) {
-        if (!self.nextInterval) {
-            self.nextInterval = 
-                levelup(path.join(self.location, self.nextIntervalStart), {
+    if (key > self.nextInterval.start) {
+        if (!self.nextInterval.interval) {
+            self.nextInterval.interval = 
+                levelup(path.join(self.location, self.nextInterval.start), {
                     cacheSize: self.cacheSize,
                     compression: self.compression,
                     createIfMissing: true,
@@ -348,11 +381,11 @@ AllDataStorage.prototype.put = function put (key, value, options, callback) {
                 });
         }
 
-        interval = self.nextInterval;
-    } else if (key > self.currentIntervalStart) {
-        interval = self.currentInterval;
-    } else if (key > self.previousIntervalStart) {
-        interval = self.previousInterval;
+        interval = self.nextInterval.interval;
+    } else if (key > self.currentInterval.start) {
+        interval = self.currentInterval.interval;
+    } else if (key > self.previousInterval.start) {
+        interval = self.previousInterval.interval;
     }
 
     interval.put(key, value, options, callback);

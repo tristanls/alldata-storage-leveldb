@@ -52,23 +52,17 @@ test['intervalCheck should not change intervals if now is less than nextInterval
     var currentInterval = allDataStorage.currentInterval;
     var nextInterval = allDataStorage.nextInterval;
 
-    var previousIntervalStart = allDataStorage.previousIntervalStart;
-    var currentIntervalStart = allDataStorage.currentIntervalStart;
-    var nextIntervalStart = allDataStorage.nextIntervalStart;
-    var nextIntervalEnd = allDataStorage.nextIntervalEnd;
-    var nextIntervalEndDateFormat = allDataStorage.nextIntervalEndDateFormat;
-
     allDataStorage.intervalCheck();
 
-    test.equal(previousInterval, allDataStorage.previousInterval);
-    test.equal(currentInterval, allDataStorage.currentInterval);
-    test.equal(nextInterval, allDataStorage.nextInterval);
+    test.equal(previousInterval.interval, allDataStorage.previousInterval.interval);
+    test.equal(currentInterval.interval, allDataStorage.currentInterval.interval);
+    test.equal(nextInterval.interval, allDataStorage.nextInterval.interval);
 
-    test.equal(previousIntervalStart, allDataStorage.previousIntervalStart);
-    test.equal(currentIntervalStart, allDataStorage.currentIntervalStart);
-    test.equal(nextIntervalStart, allDataStorage.nextIntervalStart);
-    test.equal(nextIntervalEnd, allDataStorage.nextIntervalEnd);
-    test.equal(nextIntervalEndDateFormat, allDataStorage.nextIntervalEndDateFormat);
+    test.equal(previousInterval.start, allDataStorage.previousInterval.start);
+    test.equal(currentInterval.start, allDataStorage.currentInterval.start);
+    test.equal(nextInterval.start, allDataStorage.nextInterval.start);
+    test.equal(nextInterval.end, allDataStorage.nextInterval.end);
+    test.equal(nextInterval.endDateFormat, allDataStorage.nextInterval.endDateFormat);
 
     allDataStorage.close(function () {
         test.done();
@@ -84,32 +78,26 @@ test['intervalCheck should rotate intervals if now is greater than nextIntervalS
     var currentInterval = allDataStorage.currentInterval;
     var nextInterval = allDataStorage.nextInterval;
 
-    var previousIntervalStart = allDataStorage.previousIntervalStart;
-    var currentIntervalStart = allDataStorage.currentIntervalStart;
-    var nextIntervalStart = allDataStorage.nextIntervalStart;
-    var nextIntervalEnd = allDataStorage.nextIntervalEnd;
-    var nextIntervalEndDateFormat = allDataStorage.nextIntervalEndDateFormat;
-
     // fake interval rotation time
     var now = new Date();
     var oneDay = 1000 * 60 * 60 * 24;
     now = new Date(now.getTime() + oneDay);
 
     allDataStorage.on('interval closed', function (closedIntervalPath) {
-        test.equal(closedIntervalPath, path.join(TEMP_DIR, previousIntervalStart));
+        test.equal(closedIntervalPath, path.join(TEMP_DIR, previousInterval.start));
         allDataStorage.close(function () {
             test.done();
         });
     });
     allDataStorage.intervalCheck(now);
 
-    test.strictEqual(currentInterval, allDataStorage.previousInterval);
-    test.notEqual(currentInterval, allDataStorage.currentInterval);
-    test.strictEqual(undefined, allDataStorage.nextInterval);
+    test.strictEqual(currentInterval.interval, allDataStorage.previousInterval.interval);
+    test.notEqual(currentInterval.interval, allDataStorage.currentInterval.interval);
+    test.strictEqual(undefined, allDataStorage.nextInterval.interval);
 
-    test.equal(currentIntervalStart, allDataStorage.previousIntervalStart);
-    test.equal(nextIntervalStart, allDataStorage.currentIntervalStart);
-    test.equal(nextIntervalEnd, allDataStorage.nextIntervalStart);
-    test.notEqual(nextIntervalEnd, allDataStorage.nextIntervalEnd);
-    test.notEqual(nextIntervalEndDateFormat, allDataStorage.nextIntervalEndDateFormat);
+    test.equal(currentInterval.start, allDataStorage.previousInterval.start);
+    test.equal(nextInterval.start, allDataStorage.currentInterval.start);
+    test.equal(nextInterval.end, allDataStorage.nextInterval.start);
+    test.notEqual(nextInterval.end, allDataStorage.nextInterval.end);
+    test.notEqual(nextInterval.endDateFormat, allDataStorage.nextInterval.endDateFormat);
 };

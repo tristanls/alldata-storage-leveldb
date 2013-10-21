@@ -149,7 +149,7 @@ test['new AllDataStorage() sets current interval start to current day for P1D co
     var now = new Date();
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T000000";
-    test.equal(allDataStorage.currentIntervalStart, expected);
+    test.equal(allDataStorage.currentInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -164,7 +164,7 @@ test['new AllDataStorage() sets previous interval start to previous day for P1D 
     now = new Date(now.getTime() - oneDay);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T000000";
-    test.equal(allDataStorage.previousIntervalStart, expected);
+    test.equal(allDataStorage.previousInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -179,7 +179,7 @@ test['new AllDataStorage() sets next interval start to next day for P1D consolid
     now = new Date(now.getTime() + oneDay);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T000000";
-    test.equal(allDataStorage.nextIntervalStart, expected);
+    test.equal(allDataStorage.nextInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -194,7 +194,7 @@ test['new AllDataStorage() sets next interval end to after next day for P1D cons
     now = new Date(now.getTime() + twoDays);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T000000";
-    test.equal(allDataStorage.nextIntervalEnd, expected);
+    test.equal(allDataStorage.nextInterval.end, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -216,7 +216,7 @@ test['new AllDataStorage() sets current interval start to current hour for PT3H 
     now = new Date(format);    
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.currentIntervalStart, expected);
+    test.equal(allDataStorage.currentInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -240,7 +240,7 @@ test['new AllDataStorage() sets previous interval start to three hours ago for P
     now = new Date(now.getTime() - threeHrs);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.previousIntervalStart, expected);
+    test.equal(allDataStorage.previousInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -264,7 +264,7 @@ test['new AllDataStorage() sets next interval start to three hours from now for 
     now = new Date(now.getTime() + threeHrs);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.nextIntervalStart, expected);
+    test.equal(allDataStorage.nextInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -288,7 +288,7 @@ test['new AllDataStorage() sets next interval end to after interval three hours 
     now = new Date(now.getTime() + sixHrs);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.nextIntervalEnd, expected);
+    test.equal(allDataStorage.nextInterval.end, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -301,7 +301,7 @@ test['new AllDataStorage() sets current interval start to current hour for PT1H 
     var now = new Date();
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.currentIntervalStart, expected);
+    test.equal(allDataStorage.currentInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -316,7 +316,7 @@ test['new AllDataStorage() sets previous interval start to previous hour for PT1
     now = new Date(now.getTime() - oneHr);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.previousIntervalStart, expected);
+    test.equal(allDataStorage.previousInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -331,7 +331,7 @@ test['new AllDataStorage() sets next interval start to next hour for PT1H consol
     now = new Date(now.getTime() + oneHr);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.nextIntervalStart, expected);
+    test.equal(allDataStorage.nextInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -346,7 +346,7 @@ test['new AllDataStorage() sets next interval end to after next hour for PT1H co
     now = new Date(now.getTime() + twoHr);
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") + "0000";
-    test.equal(allDataStorage.nextIntervalEnd, expected);
+    test.equal(allDataStorage.nextInterval.end, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -370,7 +370,7 @@ test['new AllDataStorage() sets current interval start to current 15 min for PT1
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.currentIntervalStart, expected);
+    test.equal(allDataStorage.currentInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -396,7 +396,7 @@ test['new AllDataStorage() sets previous interval start to previous 15 min for P
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.previousIntervalStart, expected);
+    test.equal(allDataStorage.previousInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -422,7 +422,7 @@ test['new AllDataStorage() sets next interval start to next 15 min for PT15M con
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.nextIntervalStart, expected);
+    test.equal(allDataStorage.nextInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -448,7 +448,7 @@ test['new AllDataStorage() sets next interval end to after next 15 min for PT15M
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.nextIntervalEnd, expected);
+    test.equal(allDataStorage.nextInterval.end, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -472,7 +472,7 @@ test['new AllDataStorage() sets current interval start to current 5 min for PT5M
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.currentIntervalStart, expected);
+    test.equal(allDataStorage.currentInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -498,7 +498,7 @@ test['new AllDataStorage() sets previous interval start to previous 5 min for PT
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.previousIntervalStart, expected);
+    test.equal(allDataStorage.previousInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -524,7 +524,7 @@ test['new AllDataStorage() sets next interval start to next 5 min for PT5M conso
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.nextIntervalStart, expected);
+    test.equal(allDataStorage.nextInterval.start, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -551,7 +551,7 @@ test['new AllDataStorage() sets next interval end to after next 5 min for PT5M c
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T" + dateformat(now, "UTC:HH") 
         + dateformat(now, "UTC:MM") + "00";
-    test.equal(allDataStorage.nextIntervalEnd, expected);
+    test.equal(allDataStorage.nextInterval.end, expected);
     allDataStorage.close(function () {
         test.done();
     });
@@ -567,14 +567,14 @@ test['new AllDataStorage() sets up executing intervalCheck every minute'] = func
 };
 
 test['new AllDataStorage() creates current interval leveldb'] = function (test) {
-    test.expect(3);
+    test.expect(2);
     var allDataStorage = new AllDataStorage(TEMP_DIR, {consolidationInterval: "P1D"});
     // this test could break if crossing midnight boundary, 
     var now = new Date();
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T000000";
     test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'CURRENT')));
-    test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOG')));
+    // test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOG')));
     test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOCK')));
     allDataStorage.close(function () {
         test.done();
@@ -583,7 +583,7 @@ test['new AllDataStorage() creates current interval leveldb'] = function (test) 
 
 
 test['new AllDataStorage() creates previous interval leveldb'] = function (test) {
-    test.expect(3);
+    test.expect(2);
     var allDataStorage = new AllDataStorage(TEMP_DIR, {consolidationInterval: "P1D"});
     // this test could break if crossing midnight boundary, 
     var now = new Date();
@@ -592,7 +592,7 @@ test['new AllDataStorage() creates previous interval leveldb'] = function (test)
     var expected = "" + dateformat(now, "UTC:yyyy") + dateformat(now, "UTC:mm")
         + dateformat(now, "UTC:dd") + "T000000";
     test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'CURRENT')));
-    test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOG')));
+    // test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOG')));
     test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOCK')));
     allDataStorage.close(function () {
         test.done();
