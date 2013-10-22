@@ -102,33 +102,25 @@ alldata-storage-leveldb uses [ack](https://github.com/tristanls/ack) to perform 
   * [allDataStorage.put(key, value, [options], callback)](#alldatastorageputkey-value-options-callback)
   * [Event 'interval closed'](#event-interval-closed)
 
-#### new AllDataStorage(location, [options])
+### new AllDataStorage(location, [options])
 
   * `location`: _String_ Path to a directory where data will be stored.
   * `options`: _Object_ _(Default: undefined)_
-    * `cacheSize`: _Integer_ _(Default: `8 * 1024 * 1024`)_ The size (in bytes
-            and per interval) of the in-memory LRU cache with frequently used
-            uncompressed block contents.
-    * `compression`: _Boolean_ _(Default: `true`)_ If true, all compressible 
-            data will be run through the Snappy compression algorithm before 
-            being stored. Snappy is very fast and shouldn't gain much speed by 
-            disabling so leave this on unless you have good reason to turn it 
-            off.
+    * `cacheSize`: _Integer_ _(Default: `8 * 1024 * 1024`)_ The size (in bytes and per interval) of the in-memory LRU cache with frequently used uncompressed block contents.
+    * `compression`: _Boolean_ _(Default: `true`)_ If true, all compressible data will be run through the Snappy compression algorithm before being stored. Snappy is very fast and shouldn't gain much speed by disabling so leave this on unless you have good reason to turn it off.
     * `consolidationInterval`: _String_ _(Default: `P1D`)_ ISO8601 duration specifying the length of a consolidation interval. For now, this is limited to one of: `P1D`, `PT3H`, `PT1H`, `PT15M`, `PT5M`.
-    * `keyEncoding`: _String_ _(Default: `utf8`)_ Encoding for the key. One of
-            `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`.
-    * `valueEncoding`: _String_ _(Default: `json`)_ Encoding for the key. One of
-            `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`. 
+    * `keyEncoding`: _String_ _(Default: `utf8`)_ Encoding for the key. One of `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`.
+    * `valueEncoding`: _String_ _(Default: `json`)_ Encoding for the key. One of `hex`, `utf8`, `ascii`, `binary`, `base64`, `ucs2`, `utf16le`, `json`. 
 
 Creates a new LevelDB-backed AllDataStorage instance.
 
-#### allDataStorage.close([callback])
+### allDataStorage.close([callback])
 
   * `callback`: _Function_ _(Default: undefined)_ `function (error) {}` If provided a callback to call once storage is closed.
 
 Closes storage.
 
-#### allDataStorage.intervalCheck([now])
+### allDataStorage.intervalCheck([now])
 
 _**CAUTION: reserved for internal use**_
 
@@ -143,7 +135,7 @@ When this method is executed, current time is compared with what consolidation i
 
 Upon creation of a new AllDataStorage instance this method is scheduled to run at regular intervals.
 
-#### allDataStorage.put(key, value, [options], callback)
+### allDataStorage.put(key, value, [options], callback)
 
   * `key`: _String_ AllData formatted key, example: `20130927T005240652508858176`.
   * `value`: _Object_ Event to put.
@@ -159,7 +151,7 @@ If trying to `put` to a READ ONLY portion of the story, an error will be returne
 
 Additionally, `put` updates the interval `_xor` value by XORing the existing `_xor` value with the hash of the `key`. (see: [Interval XOR](#interval-xor))
 
-#### Event `interval closed`
+### Event `interval closed`
 
   * `function (closedIntervalPath) {}`
     * `closedIntervalPath`: _String_ Path to LevelDB corresponding to the closed interval.
