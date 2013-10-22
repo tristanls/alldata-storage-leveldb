@@ -1,6 +1,6 @@
 {
   "name": "alldata-storage-leveldb",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AllData LevelDB-backed storage",
   "scripts": {
     "test": "node scripts/test.js"
