@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 "use strict";
 
 var Ack = require('ack'),
+    crypto = require('crypto'),
     dateformat = require('dateformat'),
     events = require('events'),
     levelup = require('levelup'),
@@ -172,9 +173,6 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
         + dateformat(previousIntervalStartDate, "UTC:MM")
         + "00";
 
-    // create new ack instance for tracking XORs
-    self.ack = new Ack();
-
     self.currentInterval.interval = 
         levelup(path.join(self.location, self.currentInterval.start), {
             cacheSize: self.cacheSize,
@@ -184,33 +182,38 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
             keyEncoding: self.keyEncoding,
             valueEncoding: self.valueEncoding
         });
-    // need to abstract currentIntervalState so that across interval boundaries
-    // all of it gets copied accordingly
-
+    // we have to be careful that as we try to retrieve the _xor value from the
+    // database we don't cross over an interval threshold
+    // we start with assuming that this is a new interval with no previous
+    // xor value
     self.currentInterval.xor = new Buffer(20); // 160 bit buffer
     self.currentInterval.xor.fill(0);
-    self.currentInterval.xorDirty = false;
-    self.currentInterval.xorVerified = true;
+    self.currentInterval.xorValid = false;
+    // we then attempt to retrieve the _xor value from the database
+    // if one exists, and we still are working on the same interval update the
+    // _xor
+    var _currentInterval = self.currentInterval;
+    self.currentInterval.interval.get('_xor', function (error, value) {
+        if (error) {
+            if (error.notFound) {
+                // we already assumed all zeros to start with, so we now
+                // verified that this is indeed the case, but make sure that
+                // we didn't shift intervals along the way
+                _currentInterval.xorValid = true;
+                return;
+            }
 
-    // // load existing interval from the database and update self.currentIntervalXor
-    // self.currentInterval.interval.get('_xor', function (error, value) {
-    //     if (error) {
-    //         if (error.notFound) {
-    //             // we already assumed all zeros to start with, so we now verified
-    //             // that this is indeed the case
-    //             self.currentIntervalXorVerified = true;
-    //             return;
-    //         }
+            // some other error occured
+            self.emit('error', error);
+            return;
+        }
 
-    //         self.emit('error', error); // some other error occured
-    //         return;
-    //     }
-
-    //     // we got the previous xor value
-    //     // to update what we have in memory, xor it with what we got
-    //     // make sure that 
-    //     self.ack.stamp(self.currentIntervalStart)
-    // });
+        // we have the previous xor value
+        // update what we have in the memory
+        _currentInterval.xor = Ack.xor(_currentInterval.xor, 
+            new Buffer(value, "base64"));
+        _currentInterval.xorValid = true;
+    });
 
     self.previousInterval.interval = 
         levelup(path.join(self.location, self.previousInterval.start), {
@@ -221,6 +224,31 @@ var AllDataStorage = module.exports = function AllDataStorage (location, options
             keyEncoding: self.keyEncoding,
             valueEncoding: self.valueEncoding
         });
+    self.previousInterval.xor = new Buffer(20); // 160 bit buffer
+    self.previousInterval.xor.fill(0);
+    self.previousInterval.xorValid = false;
+    var _previousInterval = self.previousInterval;
+    self.previousInterval.interval.get('_xor', function (error, value) {
+        if (error) {
+            if (error.notFound) {
+                // we already assumed all zeros to start with, so we now
+                // verified that this is indeed the case, but make sure that
+                // we didn't shift intervals along the way
+                _previousInterval.xorValid = true;
+                return;
+            }
+
+            // some other error occured
+            self.emit('error', error);
+            return;
+        }
+
+        // we have the previous xor value
+        // update what we have in the memory
+        _previousInterval.xor = Ack.xor(_previousInterval.xor, 
+            new Buffer(value, "base64"));
+        _previousInterval.xorValid = true;
+    });
 
     // check if intervals shifted every minute
     self.intervalCheckId = setInterval(self.intervalCheck, 1000 * 60 * 1);
@@ -364,7 +392,7 @@ AllDataStorage.prototype.put = function put (key, value, options, callback) {
             "furthest acceptable: " + self.nextInterval.end));
     }
 
-    var interval;
+    var chosenInterval;
 
     // if we are writing into a future interval, assume we are close to interval
     // switch and create new interval if necessary and put data in it
@@ -379,14 +407,50 @@ AllDataStorage.prototype.put = function put (key, value, options, callback) {
                     keyEncoding: self.keyEncoding,
                     valueEncoding: self.valueEncoding
                 });
+
+            self.nextInterval.xor = new Buffer(20); // 160 bit buffer
+            self.nextInterval.xor.fill(0);
+            self.nextInterval.xorValid = false;
+            var _nextInterval = self.nextInterval;
+            self.nextInterval.interval.get('_xor', function (error, value) {
+                if (error) {
+                    if (error.notFound) {
+                        // we already assumed all zeros to start with, so we now
+                        // verified that this is indeed the case, but make sure that
+                        // we didn't shift intervals along the way
+                        _nextInterval.xorValid = true;
+                        return;
+                    }
+
+                    // some other error occured
+                    self.emit('error', error);
+                    return;
+                }
+
+                // we have the previous xor value
+                // update what we have in the memory
+                _nextInterval.xor = Ack.xor(_nextInterval.xor, 
+                    new Buffer(value, "base64"));
+                _nextInterval.xorValid = true;
+            });      
         }
 
-        interval = self.nextInterval.interval;
+        chosenInterval = self.nextInterval;
     } else if (key > self.currentInterval.start) {
-        interval = self.currentInterval.interval;
+        chosenInterval = self.currentInterval;
     } else if (key > self.previousInterval.start) {
-        interval = self.previousInterval.interval;
+        chosenInterval = self.previousInterval;
     }
 
-    interval.put(key, value, options, callback);
+    var hashedKey = crypto.createHash('sha1').update(key).digest();
+    chosenInterval.xor = Ack.xor(chosenInterval.xor, hashedKey);
+    if (chosenInterval.xorValid) {
+        chosenInterval.interval.batch([
+                {type: 'put', key: '_xor', value: chosenInterval.xor.toString('base64')},
+                {type: 'put', key: key, value: value}
+            ], options, callback);
+    } else {
+        // don't save the _xor yet
+        chosenInterval.interval.put(key, value, options, callback);
+    }
 };

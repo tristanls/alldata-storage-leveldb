@@ -31,7 +31,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 "use strict";
 
-var AllDataStorage = require('../index.js'),
+var Ack = require('ack'),
+    AllDataStorage = require('../index.js'),
     crypto = require('crypto'),
     dateformat = require('dateformat'),
     path = require('path'),
@@ -55,7 +56,7 @@ test['put() should result in an error if key < previous interval start'] = funct
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.previousInterval.start;
-    key = "1999" + key.slice(4);
+    key = "1999" + key.slice(4) + "000000000000";
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(error);
         allDataStorage.close(function () {
@@ -73,7 +74,7 @@ test['put() should result in an error if key > next interval end'] = function (t
     var key = allDataStorage.previousInterval.start;
     var year = key.slice(0,4);
     year = "" + (parseInt(year, 10) + 1); // next year
-    key = "" + year + key.slice(4);
+    key = "" + year + key.slice(4) + "000000000000";
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(error);
         allDataStorage.close(function () {
@@ -88,8 +89,8 @@ test['put() should put into nextInterval if key > next interval start but key < 
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.nextInterval.start;
-    // key example: 20131016T000000
-    key = key.slice(0, 13) + "10"; // 10 seconds past nextInterval.start
+    // key example: 20131016T000000000000000000
+    key = key.slice(0, 13) + "10000000000000"; // 10 seconds past nextInterval.start
     test.ok(!allDataStorage.nextInterval.interval);
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(!error);
@@ -103,24 +104,40 @@ test['put() should put into nextInterval if key > next interval start but key < 
 };
 
 test['put() updates nextInterval XOR if putting into next interval'] = function (test) {
-    test.expect(3);
+    test.expect(4);
     var location = randomDir();
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.nextInterval.start;
-    // key example: 20131016T000000
-    key = key.slice(0, 13) + "10"; // 10 seconds past nextInterval.start
+    // key example: 20131016T000000000000000000
+    key = key.slice(0, 13) + "10000000000000"; // 10 seconds past nextInterval.start
+    var key2 = key.slice(0, 13) + "20000000000000"; // 20 seconds past nextInterval.start
     var hash = crypto.createHash('sha1').update(key).digest('base64');
     test.ok(!allDataStorage.nextInterval.interval);
+    // interval will not exist yet
+    // doing the first put will create the interval and set xorValid to false
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(!error);
-        allDataStorage.nextInterval.interval.get('_xor', function (error, value) {
-            test.equal(value, hash); // xor of key with all zeros
-            allDataStorage.close(function () {
-                test.done();
+        // the next interval should have been created and xorValidation should
+        // take place
+        setImmediate(function () {
+            allDataStorage.put(key2, {foo: 'bar'}, function (error) {
+                test.ok(!error);
+                // second put has succeeded, and now xor should have been saved
+                // as well
+                allDataStorage.nextInterval.interval.get('_xor', function (error, value) {
+                    // the hash value should be base64 XOR of key and key2
+                    var keyHash = crypto.createHash('sha1').update(key).digest();
+                    var key2Hash = crypto.createHash('sha1').update(key2).digest();
+                    var expected = Ack.xor(keyHash, key2Hash).toString('base64');
+                    test.equal(expected, value);
+                    allDataStorage.close(function() {
+                        test.done();
+                    });
+                });
             });
         });
-    });  
+    });
 };
 
 test['put() should put into currentInterval if key > current interval start but key < next interval start'] = function (test) {
@@ -129,8 +146,8 @@ test['put() should put into currentInterval if key > current interval start but 
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.currentInterval.start;
-    // key example: 20131016T000000
-    key = key.slice(0, 13) + "10"; // 10 seconds past currentInterval.start
+    // key example: 20131016T000000000000000000
+    key = key.slice(0, 13) + "10000000000000"; // 10 seconds past currentInterval.start
     test.ok(!allDataStorage.nextInterval.interval);
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(!allDataStorage.nextInterval.interval);
@@ -150,10 +167,11 @@ test['put() updates currentInterval XOR if putting into current interval'] = fun
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.currentInterval.start;
-    // key example: 20131016T000000
-    key = key.slice(0, 13) + "10"; // 10 seconds past currentInterval.start
+    // key example: 20131016T000000000000000000
+    key = key.slice(0, 13) + "10000000000000"; // 10 seconds past currentInterval.start
     var hash = crypto.createHash('sha1').update(key).digest('base64');
     test.ok(!allDataStorage.nextInterval.interval);
+    allDataStorage.currentInterval.xorValid = true; // force xorValid for test
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(!allDataStorage.nextInterval.interval);
         test.ok(!error);
@@ -172,8 +190,8 @@ test['put() should put into previousInterval if key > previous interval start bu
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.previousInterval.start;
-    // key example: 20131016T000000
-    key = key.slice(0, 13) + "10"; // 10 seconds past previousInterval.start
+    // key example: 20131016T000000000000000000
+    key = key.slice(0, 13) + "10000000000000"; // 10 seconds past previousInterval.start
     test.ok(!allDataStorage.nextInterval.interval);
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(!allDataStorage.nextInterval.interval);
@@ -193,10 +211,11 @@ test['put() updates previousInterval XOR if putting into previous interval'] = f
     shelljs.mkdir(location);
     var allDataStorage = new AllDataStorage(location);
     var key = allDataStorage.previousInterval.start;
-    // key example: 20131016T000000
-    key = key.slice(0, 13) + "10"; // 10 seconds past previousInterval.start
+    // key example: 20131016T000000000000000000
+    key = key.slice(0, 13) + "10000000000000"; // 10 seconds past previousInterval.start
     var hash = crypto.createHash('sha1').update(key).digest('base64');
     test.ok(!allDataStorage.nextInterval.interval);
+    allDataStorage.previousInterval.xorValid = true; // force xorValid for test
     allDataStorage.put(key, {foo: 'bar'}, function (error) {
         test.ok(!allDataStorage.nextInterval.interval);
         test.ok(!error);
