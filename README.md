@@ -75,22 +75,6 @@ On the boundary between intervals, there might be a condition when an event not 
                                              now
 ```
 
-### Interval XOR
-
-Each Consolidation Interval shall maintain a cumulative `_xor` key containing the value of cumulative XOR of a 160-bit SHA-1 hash derived from each key. The algorithm used shall be:
-
-```javascript
-var key = "20130927T005240652508858176";
-var hash = crypto.createHash('sha1').update(key).digest();
-// <SlowBuffer 43 f7 14 b0 97 e1 9e 97 47 e0 d5 0b 09 51 14 81 3b de 98 25>
-hash.toString("base64");
-// 'Q/cUsJfhnpdH4NULCVEUgTvemCU='
-```
-
-This requirement exists to support AllData consolidation process and reduce the number of replicas that need to be replayed for consolidation.
-
-alldata-storage-leveldb uses [ack](https://github.com/tristanls/ack) to perform this computation.
-
 ## Documentation
 
 ### AllDataStorage
@@ -148,8 +132,6 @@ Upon creation of a new AllDataStorage instance this method is scheduled to run a
 During normal operation `keyEncoding` and `valueEncoding` "global" values will be used. It is not recommended to have different encodings for different puts to the same underlying LevelDB database.
 
 If trying to `put` to a READ ONLY portion of the story, an error will be returned.
-
-Additionally, `put` updates the interval `_xor` value by XORing the existing `_xor` value with the hash of the `key`. (see: [Interval XOR](#interval-xor))
 
 ### Event `interval closed`
 

@@ -581,18 +581,6 @@ test['new AllDataStorage() creates current interval leveldb'] = function (test) 
     });
 };
 
-test['new AllDataStorage() sets new current interval xor to all zeros and not valid'] = function (test) {
-    test.expect(21);
-    var allDataStorage = new AllDataStorage(TEMP_DIR, {consolidationInterval: "P1D"});
-    for (var i = 0; i < allDataStorage.currentInterval.xor.length; i++) {
-        test.equal(allDataStorage.currentInterval.xor[i], 0);
-    };
-    test.strictEqual(allDataStorage.currentInterval.xorValid, false);
-    allDataStorage.close(function () {
-        test.done();
-    });
-};
-
 
 test['new AllDataStorage() creates previous interval leveldb'] = function (test) {
     test.expect(2);
@@ -606,18 +594,6 @@ test['new AllDataStorage() creates previous interval leveldb'] = function (test)
     test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'CURRENT')));
     // test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOG')));
     test.ok(shelljs.test('-e', path.join(TEMP_DIR, expected, 'LOCK')));
-    allDataStorage.close(function () {
-        test.done();
-    });
-};
-
-test['new AllDataStorage() sets new previous interval xor to all zeros and not valid'] = function (test) {
-    test.expect(21);
-    var allDataStorage = new AllDataStorage(TEMP_DIR, {consolidationInterval: "P1D"});
-    for (var i = 0; i < allDataStorage.previousInterval.xor.length; i++) {
-        test.equal(allDataStorage.previousInterval.xor[i], 0);
-    };
-    test.strictEqual(allDataStorage.previousInterval.xorValid, false);
     allDataStorage.close(function () {
         test.done();
     });
