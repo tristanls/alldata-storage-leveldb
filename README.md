@@ -21,8 +21,8 @@ var allDataStorage = new AllDataStorage('./db', {
     valueEncoding: 'json'    
 });
 
-allDataStorage.on('interval closed', function (pathToIntervalDb) {
-    console.log('new read-only interval at ' + pathToIntervalDb); 
+allDataStorage.on('interval closed', function (closedIntervalName) {
+    console.log('new read-only interval: ' + closedIntervalName); 
 });
 
 allDataStorage.put('20130927T005240652508858176', {foo: 'bar'}, function (error) {
@@ -135,13 +135,13 @@ If trying to `put` to a READ ONLY portion of the story, an error will be returne
 
 ### Event `interval closed`
 
-  * `function (closedIntervalPath) {}`
-    * `closedIntervalPath`: _String_ Path to LevelDB corresponding to the closed interval.
+  * `function (closedIntervalName) {}`
+    * `closedIntervalName`: _String_ Name of the closed interval.
 
 Emitted when an interval is closed and becomes read-only.
 
 ```javascript
-allDataStorage.on('interval closed', function (closedIntervalPath) {
-    console.log("interval " + closedIntervalPath + " closed"); 
+allDataStorage.on('interval closed', function (closedIntervalName) {
+    console.log("interval " + closedIntervalName + " closed"); 
 });
 ```

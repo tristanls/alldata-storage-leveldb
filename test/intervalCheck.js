@@ -83,8 +83,8 @@ test['intervalCheck should rotate intervals if now is greater than nextIntervalS
     var oneDay = 1000 * 60 * 60 * 24;
     now = new Date(now.getTime() + oneDay);
 
-    allDataStorage.on('interval closed', function (closedIntervalPath) {
-        test.equal(closedIntervalPath, path.join(TEMP_DIR, previousInterval.start));
+    allDataStorage.on('interval closed', function (closedIntervalName) {
+        test.equal(closedIntervalName, previousInterval.start);
         allDataStorage.close(function () {
             test.done();
         });

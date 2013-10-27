@@ -258,12 +258,11 @@ AllDataStorage.prototype.intervalCheck = function intervalCheck (now) {
         + dateformat(now, "UTC:MM") + "00";
 
     if (nowString > self.nextInterval.start) {
-        var closedIntervalPath = 
-            path.join(self.location, self.previousInterval.start);
+        var closedIntervalName = self.previousInterval.start;
 
         self.previousInterval.interval.close(function (error) {
             // TODO: what to do in case of error here?
-            self.emit('interval closed', closedIntervalPath);                   
+            self.emit('interval closed', closedIntervalName);                   
         });
 
         self.previousInterval = self.currentInterval;
